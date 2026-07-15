@@ -6,11 +6,15 @@
 
 也打算添加一些对图帧的常见处理功能
 
-# About Build
+# Build
+
+本项目使用 pnpm 管理，Vite 构建，因此：
 
 ```bash
 pnpm install
-pnpm run dev
 pnpm run build
-pnpm run preview
 ```
+
+也有一个在线示例：
+
+[RM2k Charset Editor](https://blanhhy.github.io/rm2k-charset-editor/)
