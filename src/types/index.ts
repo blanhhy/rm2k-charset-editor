@@ -20,7 +20,7 @@ export interface Clipboard {
 }
 
 export interface HistoryEntry {
-  operation: 'swap' | 'cut' | 'copy' | 'paste' | 'delete';
+  operation: 'swap' | 'cut' | 'copy' | 'paste' | 'delete' | 'flipHorizontal' | 'flipVertical' | 'fillColor' | 'addOutline' | 'changeOutlineColor' | 'removeOutline' | 'importFrame';
   before: { imageIndex: number; charIndex: number; animIndex: number; pixelData: ImageData }[];
   after: { imageIndex: number; charIndex: number; animIndex: number; pixelData: ImageData }[];
 }
@@ -44,5 +44,5 @@ export const CHARSET_CONFIG = {
   FRAME_HEIGHT: 32,
 };
 
-export const DIRECTIONS = ['下', '左', '右', '上'];
-export const ANIM_STATES = ['待机动画', '行走帧1', '行走帧2'];
+export const DIRECTIONS = ['上', '右', '下', '左'];
+export const ANIM_STATES = ['左', '中', '右'];

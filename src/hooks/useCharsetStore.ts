@@ -1,7 +1,17 @@
 import { create } from 'zustand';
 import { CharsetImage, Clipboard, HistoryEntry, FramePosition } from '../types';
-import { createEmptyFrame } from '../utils/imageProcessor';
-import { CHARSET_CONFIG } from '../types';
+import { 
+  createEmptyFrame, 
+  flipFrameHorizontal, 
+  flipFrameVertical, 
+  fillFrameColor,
+  addFrameOutline,
+  changeOutlineColor,
+  removeFrameOutline,
+  loadFrameFromFile,
+  exportFrameToPng8DataUrl,
+} from '../utils/imageProcessor';
+import { CHARSET_CONFIG, DIRECTIONS, ANIM_STATES } from '../types';
 import { encodePng8 } from '../utils/png8Encoder';
 
 interface CharsetStore {
@@ -34,6 +44,15 @@ interface CharsetStore {
   setDraggingFrame: (position: FramePosition | null) => void;
   
   exportImage: (index: number) => string;
+  
+  flipFrameHorizontal: (position: FramePosition) => void;
+  flipFrameVertical: (position: FramePosition) => void;
+  fillFrameColor: (position: FramePosition, color: string, preserveOutline?: boolean) => void;
+  addFrameOutline: (position: FramePosition, color: string) => void;
+  changeOutlineColor: (position: FramePosition, newColor: string) => void;
+  removeFrameOutline: (position: FramePosition) => void;
+  importFrame: (position: FramePosition, file: File) => Promise<void>;
+  exportFrame: (position: FramePosition) => { dataUrl: string; fileName: string } | null;
 }
 
 function clonePixelData(source: ImageData): ImageData {
@@ -478,6 +497,302 @@ export const useCharsetStore = create<CharsetStore>((set, get) => ({
     
     const pixelData = ctx.getImageData(0, 0, CHARSET_CONFIG.WIDTH, CHARSET_CONFIG.HEIGHT);
     return encodePng8(CHARSET_CONFIG.WIDTH, CHARSET_CONFIG.HEIGHT, pixelData.data, image.backgroundColor);
+  },
+  
+  flipFrameHorizontal: (position) => {
+    set((state) => {
+      const img = state.images[position.imageIndex];
+      if (!img) return state;
+      
+      const charFrames = img.frames[position.charIndex];
+      if (!charFrames) return state;
+      
+      const animRow = Math.floor(position.animIndex / CHARSET_CONFIG.ANIM_COLS);
+      const animCol = position.animIndex % CHARSET_CONFIG.ANIM_COLS;
+      const rowFrames = charFrames[animRow];
+      if (!rowFrames) return state;
+      
+      const frame = rowFrames[animCol];
+      if (!frame) return state;
+      
+      const beforeData = clonePixelData(frame.pixelData);
+      const newData = flipFrameHorizontal(frame.pixelData);
+      
+      const newImages = deepCloneImages(state.images);
+      newImages[position.imageIndex].frames[position.charIndex][animRow][animCol].pixelData = newData;
+      
+      const newHistory = state.history.slice(0, state.historyIndex + 1);
+      newHistory.push({
+        operation: 'flipHorizontal',
+        before: [{ ...position, pixelData: beforeData }],
+        after: [{ ...position, pixelData: clonePixelData(newData) }],
+      });
+      
+      return {
+        images: newImages,
+        history: newHistory,
+        historyIndex: newHistory.length - 1,
+        version: state.version + 1,
+      };
+    });
+  },
+  
+  flipFrameVertical: (position) => {
+    set((state) => {
+      const img = state.images[position.imageIndex];
+      if (!img) return state;
+      
+      const charFrames = img.frames[position.charIndex];
+      if (!charFrames) return state;
+      
+      const animRow = Math.floor(position.animIndex / CHARSET_CONFIG.ANIM_COLS);
+      const animCol = position.animIndex % CHARSET_CONFIG.ANIM_COLS;
+      const rowFrames = charFrames[animRow];
+      if (!rowFrames) return state;
+      
+      const frame = rowFrames[animCol];
+      if (!frame) return state;
+      
+      const beforeData = clonePixelData(frame.pixelData);
+      const newData = flipFrameVertical(frame.pixelData);
+      
+      const newImages = deepCloneImages(state.images);
+      newImages[position.imageIndex].frames[position.charIndex][animRow][animCol].pixelData = newData;
+      
+      const newHistory = state.history.slice(0, state.historyIndex + 1);
+      newHistory.push({
+        operation: 'flipVertical',
+        before: [{ ...position, pixelData: beforeData }],
+        after: [{ ...position, pixelData: clonePixelData(newData) }],
+      });
+      
+      return {
+        images: newImages,
+        history: newHistory,
+        historyIndex: newHistory.length - 1,
+        version: state.version + 1,
+      };
+    });
+  },
+  
+  fillFrameColor: (position, color, preserveOutline = false) => {
+    set((state) => {
+      const img = state.images[position.imageIndex];
+      if (!img) return state;
+      
+      const charFrames = img.frames[position.charIndex];
+      if (!charFrames) return state;
+      
+      const animRow = Math.floor(position.animIndex / CHARSET_CONFIG.ANIM_COLS);
+      const animCol = position.animIndex % CHARSET_CONFIG.ANIM_COLS;
+      const rowFrames = charFrames[animRow];
+      if (!rowFrames) return state;
+      
+      const frame = rowFrames[animCol];
+      if (!frame) return state;
+      
+      const beforeData = clonePixelData(frame.pixelData);
+      const newData = fillFrameColor(frame.pixelData, color, preserveOutline);
+      
+      const newImages = deepCloneImages(state.images);
+      newImages[position.imageIndex].frames[position.charIndex][animRow][animCol].pixelData = newData;
+      
+      const newHistory = state.history.slice(0, state.historyIndex + 1);
+      newHistory.push({
+        operation: 'fillColor',
+        before: [{ ...position, pixelData: beforeData }],
+        after: [{ ...position, pixelData: clonePixelData(newData) }],
+      });
+      
+      return {
+        images: newImages,
+        history: newHistory,
+        historyIndex: newHistory.length - 1,
+        version: state.version + 1,
+      };
+    });
+  },
+  
+  addFrameOutline: (position, color) => {
+    set((state) => {
+      const img = state.images[position.imageIndex];
+      if (!img) return state;
+      
+      const charFrames = img.frames[position.charIndex];
+      if (!charFrames) return state;
+      
+      const animRow = Math.floor(position.animIndex / CHARSET_CONFIG.ANIM_COLS);
+      const animCol = position.animIndex % CHARSET_CONFIG.ANIM_COLS;
+      const rowFrames = charFrames[animRow];
+      if (!rowFrames) return state;
+      
+      const frame = rowFrames[animCol];
+      if (!frame) return state;
+      
+      const beforeData = clonePixelData(frame.pixelData);
+      const newData = addFrameOutline(frame.pixelData, color);
+      
+      const newImages = deepCloneImages(state.images);
+      newImages[position.imageIndex].frames[position.charIndex][animRow][animCol].pixelData = newData;
+      
+      const newHistory = state.history.slice(0, state.historyIndex + 1);
+      newHistory.push({
+        operation: 'addOutline',
+        before: [{ ...position, pixelData: beforeData }],
+        after: [{ ...position, pixelData: clonePixelData(newData) }],
+      });
+      
+      return {
+        images: newImages,
+        history: newHistory,
+        historyIndex: newHistory.length - 1,
+        version: state.version + 1,
+      };
+    });
+  },
+  
+  changeOutlineColor: (position, newColor) => {
+    set((state) => {
+      const img = state.images[position.imageIndex];
+      if (!img) return state;
+      
+      const charFrames = img.frames[position.charIndex];
+      if (!charFrames) return state;
+      
+      const animRow = Math.floor(position.animIndex / CHARSET_CONFIG.ANIM_COLS);
+      const animCol = position.animIndex % CHARSET_CONFIG.ANIM_COLS;
+      const rowFrames = charFrames[animRow];
+      if (!rowFrames) return state;
+      
+      const frame = rowFrames[animCol];
+      if (!frame) return state;
+      
+      const beforeData = clonePixelData(frame.pixelData);
+      const newData = changeOutlineColor(frame.pixelData, newColor);
+      
+      const newImages = deepCloneImages(state.images);
+      newImages[position.imageIndex].frames[position.charIndex][animRow][animCol].pixelData = newData;
+      
+      const newHistory = state.history.slice(0, state.historyIndex + 1);
+      newHistory.push({
+        operation: 'changeOutlineColor',
+        before: [{ ...position, pixelData: beforeData }],
+        after: [{ ...position, pixelData: clonePixelData(newData) }],
+      });
+      
+      return {
+        images: newImages,
+        history: newHistory,
+        historyIndex: newHistory.length - 1,
+        version: state.version + 1,
+      };
+    });
+  },
+  
+  removeFrameOutline: (position) => {
+    set((state) => {
+      const img = state.images[position.imageIndex];
+      if (!img) return state;
+      
+      const charFrames = img.frames[position.charIndex];
+      if (!charFrames) return state;
+      
+      const animRow = Math.floor(position.animIndex / CHARSET_CONFIG.ANIM_COLS);
+      const animCol = position.animIndex % CHARSET_CONFIG.ANIM_COLS;
+      const rowFrames = charFrames[animRow];
+      if (!rowFrames) return state;
+      
+      const frame = rowFrames[animCol];
+      if (!frame) return state;
+      
+      const beforeData = clonePixelData(frame.pixelData);
+      const newData = removeFrameOutline(frame.pixelData);
+      
+      const newImages = deepCloneImages(state.images);
+      newImages[position.imageIndex].frames[position.charIndex][animRow][animCol].pixelData = newData;
+      
+      const newHistory = state.history.slice(0, state.historyIndex + 1);
+      newHistory.push({
+        operation: 'removeOutline',
+        before: [{ ...position, pixelData: beforeData }],
+        after: [{ ...position, pixelData: clonePixelData(newData) }],
+      });
+      
+      return {
+        images: newImages,
+        history: newHistory,
+        historyIndex: newHistory.length - 1,
+        version: state.version + 1,
+      };
+    });
+  },
+  
+  importFrame: async (position, file) => {
+    try {
+      const pixelData = await loadFrameFromFile(file);
+      set((state) => {
+        const img = state.images[position.imageIndex];
+        if (!img) return state;
+        
+        const charFrames = img.frames[position.charIndex];
+        if (!charFrames) return state;
+        
+        const animRow = Math.floor(position.animIndex / CHARSET_CONFIG.ANIM_COLS);
+        const animCol = position.animIndex % CHARSET_CONFIG.ANIM_COLS;
+        const rowFrames = charFrames[animRow];
+        if (!rowFrames) return state;
+        
+        const frame = rowFrames[animCol];
+        if (!frame) return state;
+        
+        const beforeData = clonePixelData(frame.pixelData);
+        
+        const newImages = deepCloneImages(state.images);
+        newImages[position.imageIndex].frames[position.charIndex][animRow][animCol].pixelData = clonePixelData(pixelData);
+        
+        const newHistory = state.history.slice(0, state.historyIndex + 1);
+        newHistory.push({
+          operation: 'importFrame',
+          before: [{ ...position, pixelData: beforeData }],
+          after: [{ ...position, pixelData: clonePixelData(pixelData) }],
+        });
+        
+        return {
+          images: newImages,
+          history: newHistory,
+          historyIndex: newHistory.length - 1,
+          version: state.version + 1,
+        };
+      });
+    } catch (err) {
+      console.error('Failed to import frame:', err);
+    }
+  },
+  
+  exportFrame: (position) => {
+    const { images } = get();
+    const img = images[position.imageIndex];
+    if (!img) return null;
+    
+    const charFrames = img.frames[position.charIndex];
+    if (!charFrames) return null;
+    
+    const animRow = Math.floor(position.animIndex / CHARSET_CONFIG.ANIM_COLS);
+    const animCol = position.animIndex % CHARSET_CONFIG.ANIM_COLS;
+    const rowFrames = charFrames[animRow];
+    if (!rowFrames) return null;
+    
+    const frame = rowFrames[animCol];
+    if (!frame) return null;
+    
+    const direction = DIRECTIONS[animRow];
+    const animState = ANIM_STATES[animCol];
+    const fileName = `${img.name}-${position.charIndex + 1}-${direction}-${animState}.png`;
+    
+    return {
+      dataUrl: exportFrameToPng8DataUrl(frame.pixelData),
+      fileName,
+    };
   },
 }));
 

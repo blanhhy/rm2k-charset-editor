@@ -179,3 +179,231 @@ export function copyFrameData(source: ImageData): ImageData {
   newImageData.data.set(source.data);
   return newImageData;
 }
+
+export function flipFrameHorizontal(source: ImageData): ImageData {
+  const canvas = document.createElement('canvas');
+  canvas.width = source.width;
+  canvas.height = source.height;
+  const ctx = canvas.getContext('2d')!;
+  ctx.putImageData(source, 0, 0);
+  
+  const outputCanvas = document.createElement('canvas');
+  outputCanvas.width = source.width;
+  outputCanvas.height = source.height;
+  const outputCtx = outputCanvas.getContext('2d')!;
+  
+  outputCtx.translate(source.width, 0);
+  outputCtx.scale(-1, 1);
+  outputCtx.drawImage(canvas, 0, 0);
+  
+  return outputCtx.getImageData(0, 0, source.width, source.height);
+}
+
+export function flipFrameVertical(source: ImageData): ImageData {
+  const canvas = document.createElement('canvas');
+  canvas.width = source.width;
+  canvas.height = source.height;
+  const ctx = canvas.getContext('2d')!;
+  ctx.putImageData(source, 0, 0);
+  
+  const outputCanvas = document.createElement('canvas');
+  outputCanvas.width = source.width;
+  outputCanvas.height = source.height;
+  const outputCtx = outputCanvas.getContext('2d')!;
+  
+  outputCtx.translate(0, source.height);
+  outputCtx.scale(1, -1);
+  outputCtx.drawImage(canvas, 0, 0);
+  
+  return outputCtx.getImageData(0, 0, source.width, source.height);
+}
+
+export function fillFrameColor(source: ImageData, color: string, preserveOutline: boolean = false): ImageData {
+  const newData = copyFrameData(source);
+  const rgb = parseColor(color);
+  const width = source.width;
+  const height = source.height;
+  
+  const directions = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+  
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4;
+      if (newData.data[idx + 3] > 0) {
+        if (!preserveOutline) {
+          newData.data[idx] = rgb.r;
+          newData.data[idx + 1] = rgb.g;
+          newData.data[idx + 2] = rgb.b;
+        } else {
+          let isOutline = false;
+          for (const [dx, dy] of directions) {
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+              const nidx = (ny * width + nx) * 4;
+              if (newData.data[nidx + 3] === 0) {
+                isOutline = true;
+                break;
+              }
+            }
+          }
+          if (!isOutline) {
+            newData.data[idx] = rgb.r;
+            newData.data[idx + 1] = rgb.g;
+            newData.data[idx + 2] = rgb.b;
+          }
+        }
+      }
+    }
+  }
+  
+  return newData;
+}
+
+export function addFrameOutline(source: ImageData, color: string): ImageData {
+  const newData = copyFrameData(source);
+  const rgb = parseColor(color);
+  const width = source.width;
+  const height = source.height;
+  
+  const outlinePixels = new Set<string>();
+  
+  const directions = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+  
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4;
+      if (newData.data[idx + 3] > 0) {
+        for (const [dx, dy] of directions) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+            const nidx = (ny * width + nx) * 4;
+            if (newData.data[nidx + 3] === 0) {
+              outlinePixels.add(`${nx},${ny}`);
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  outlinePixels.forEach(key => {
+    const [x, y] = key.split(',').map(Number);
+    const idx = (y * width + x) * 4;
+    newData.data[idx] = rgb.r;
+    newData.data[idx + 1] = rgb.g;
+    newData.data[idx + 2] = rgb.b;
+    newData.data[idx + 3] = 255;
+  });
+  
+  return newData;
+}
+
+export function changeOutlineColor(source: ImageData, newColor: string): ImageData {
+  const newData = copyFrameData(source);
+  const newRgb = parseColor(newColor);
+  const width = source.width;
+  const height = source.height;
+  
+  const directions = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+  
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4;
+      if (newData.data[idx + 3] > 0) {
+        let isOutline = false;
+        for (const [dx, dy] of directions) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+            const nidx = (ny * width + nx) * 4;
+            if (newData.data[nidx + 3] === 0) {
+              isOutline = true;
+              break;
+            }
+          }
+        }
+        if (isOutline) {
+          newData.data[idx] = newRgb.r;
+          newData.data[idx + 1] = newRgb.g;
+          newData.data[idx + 2] = newRgb.b;
+        }
+      }
+    }
+  }
+  
+  return newData;
+}
+
+export function removeFrameOutline(source: ImageData): ImageData {
+  const newData = copyFrameData(source);
+  const width = source.width;
+  const height = source.height;
+  
+  const outlinePixels = new Set<string>();
+  
+  const directions = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+  
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4;
+      if (newData.data[idx + 3] > 0) {
+        for (const [dx, dy] of directions) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+            const nidx = (ny * width + nx) * 4;
+            if (newData.data[nidx + 3] === 0) {
+              outlinePixels.add(`${x},${y}`);
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  outlinePixels.forEach(key => {
+    const [x, y] = key.split(',').map(Number);
+    const idx = (y * width + x) * 4;
+    newData.data[idx + 3] = 0;
+  });
+  
+  return newData;
+}
+
+
+
+export async function loadFrameFromFile(file: File): Promise<ImageData> {
+  const url = URL.createObjectURL(file);
+  const img = await loadImage(url);
+  URL.revokeObjectURL(url);
+  
+  const canvas = document.createElement('canvas');
+  canvas.width = CHARSET_CONFIG.FRAME_WIDTH;
+  canvas.height = CHARSET_CONFIG.FRAME_HEIGHT;
+  const ctx = canvas.getContext('2d')!;
+  
+  ctx.drawImage(img, 0, 0, CHARSET_CONFIG.FRAME_WIDTH, CHARSET_CONFIG.FRAME_HEIGHT);
+  
+  return ctx.getImageData(0, 0, CHARSET_CONFIG.FRAME_WIDTH, CHARSET_CONFIG.FRAME_HEIGHT);
+}
+
+export function exportFrameToDataUrl(pixelData: ImageData): string {
+  const canvas = document.createElement('canvas');
+  canvas.width = pixelData.width;
+  canvas.height = pixelData.height;
+  const ctx = canvas.getContext('2d')!;
+  ctx.putImageData(pixelData, 0, 0);
+  return canvas.toDataURL('image/png');
+}
+
+export function exportFrameToPng8DataUrl(pixelData: ImageData): string {
+  const canvas = document.createElement('canvas');
+  canvas.width = pixelData.width;
+  canvas.height = pixelData.height;
+  const ctx = canvas.getContext('2d')!;
+  ctx.putImageData(pixelData, 0, 0);
+  return canvas.toDataURL('image/png');
+}
