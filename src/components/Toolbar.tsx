@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Scissors, Copy, Clipboard, Trash2, Undo, Redo, FlipHorizontal, FlipVertical, PaintBucket, Square, Download, Upload, ChevronDown } from 'lucide-react';
+import { Plus, Scissors, Copy, Clipboard, Trash2, Undo, Redo, PaintBucket, ChevronDown, FlipHorizontal, FlipVertical, Upload, Download } from 'lucide-react';
 import { useCharsetStore } from '../hooks/useCharsetStore';
 import { DIRECTIONS, ANIM_STATES, CHARSET_CONFIG } from '../types';
 
@@ -90,51 +90,43 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onImportClick }) => {
   return (
     <div className="bg-gray-800 border-b border-gray-700 px-4 py-3">
       <div className="flex items-center gap-2">
-        <button onClick={onImportClick} className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-500 transition-colors btn-glow">
+        <button onClick={onImportClick} className="p-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-500 transition-colors btn-glow" title="添加素材">
           <Plus size={18} />
-          <span className="font-medium">添加素材</span>
         </button>
         
         <div className="w-px h-8 bg-gray-600 mx-2" />
         
-        <button onClick={() => selectedFrame && cutFrame(selectedFrame)} disabled={!selectedFrame} className="flex items-center gap-2 px-3 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="剪切 (Ctrl+X)">
+        <button onClick={() => selectedFrame && cutFrame(selectedFrame)} disabled={!selectedFrame} className="p-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="剪切 (Ctrl+X)">
           <Scissors size={16} />
-          <span className="text-sm">剪切</span>
         </button>
         
-        <button onClick={() => selectedFrame && copyFrame(selectedFrame)} disabled={!selectedFrame} className="flex items-center gap-2 px-3 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="复制 (Ctrl+C)">
+        <button onClick={() => selectedFrame && copyFrame(selectedFrame)} disabled={!selectedFrame} className="p-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="复制 (Ctrl+C)">
           <Copy size={16} />
-          <span className="text-sm">复制</span>
         </button>
         
-        <button onClick={() => selectedFrame && pasteFrame(selectedFrame)} disabled={!selectedFrame || !canPaste} className="flex items-center gap-2 px-3 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="粘贴 (Ctrl+V)">
+        <button onClick={() => selectedFrame && pasteFrame(selectedFrame)} disabled={!selectedFrame || !canPaste} className="p-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="粘贴 (Ctrl+V)">
           <Clipboard size={16} />
-          <span className="text-sm">粘贴</span>
         </button>
         
-        <button onClick={() => selectedFrame && deleteFrame(selectedFrame)} disabled={!selectedFrame} className="flex items-center gap-2 px-3 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-red-600 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="删除 (Delete)">
+        <button onClick={() => selectedFrame && deleteFrame(selectedFrame)} disabled={!selectedFrame} className="p-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-red-600 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="删除 (Delete)">
           <Trash2 size={16} />
-          <span className="text-sm">删除</span>
         </button>
         
         <div className="w-px h-8 bg-gray-600 mx-2" />
         
-        <button onClick={undo} disabled={!canUndo} className="flex items-center gap-2 px-3 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="撤销 (Ctrl+Z)">
+        <button onClick={undo} disabled={!canUndo} className="p-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="撤销 (Ctrl+Z)">
           <Undo size={16} />
-          <span className="text-sm">撤销</span>
         </button>
         
-        <button onClick={redo} disabled={!canRedo} className="flex items-center gap-2 px-3 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="重做 (Ctrl+Y)">
+        <button onClick={redo} disabled={!canRedo} className="p-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="重做 (Ctrl+Y)">
           <Redo size={16} />
-          <span className="text-sm">重做</span>
         </button>
         
         <div className="w-px h-8 bg-gray-600 mx-2" />
         
         <div className="relative" ref={menuRef}>
-          <button onClick={() => setShowFrameMenu(!showFrameMenu)} disabled={!selectedFrame} className="flex items-center gap-2 px-3 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <button onClick={() => setShowFrameMenu(!showFrameMenu)} disabled={!selectedFrame} className="flex items-center gap-1 px-2 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="图帧操作">
             <PaintBucket size={16} />
-            <span className="text-sm">图帧操作</span>
             <ChevronDown size={14} />
           </button>
           
@@ -200,7 +192,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onImportClick }) => {
         <input ref={importInputRef} type="file" accept="image/png,image/jpeg" onChange={handleImportFrame} className="hidden" />
         
         <div className="ml-auto flex items-center gap-4 text-xs text-gray-500">
-          <span>快捷键: Ctrl+X/C/V/Z/Y</span>
           {selectedFrame && (
             <span className="text-cyan-400">
               选中: 图#{selectedFrame.imageIndex + 1} 角色#{selectedFrame.charIndex + 1} {DIRECTIONS[Math.floor(selectedFrame.animIndex / CHARSET_CONFIG.ANIM_COLS)]}{ANIM_STATES[selectedFrame.animIndex % CHARSET_CONFIG.ANIM_COLS]}

@@ -91,18 +91,14 @@ function App() {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <header className="bg-gray-800 border-b border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-cyan-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">C</span>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-white">RM2K Charset Editor</h1>
-                <p className="text-xs text-gray-500">可视化整理 RPG Maker 2000 Charset 素材</p>
-              </div>
-            </div>
+      <header className="bg-gray-800 border-b border-gray-700 px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-cyan-600 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-xl">C</span>
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-white">RM2K Charset Editor</h1>
+            <p className="text-xs text-gray-500">可视化整理 RPG Maker 2000 Charset 素材</p>
           </div>
         </div>
       </header>
@@ -119,7 +115,7 @@ function App() {
                 </svg>
               </div>
               <h2 className="text-lg font-medium text-gray-400 mb-2">还没有导入任何素材</h2>
-              <p className="text-sm mb-6">点击上方「添加素材」按钮，或直接拖放 PNG 文件到此处</p>
+              <p className="text-sm mb-6">点击左上方加号按钮，或直接拖放 PNG 文件到此处</p>
               <button
                 onClick={() => setIsImportModalOpen(true)}
                 className="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-500 transition-colors"
