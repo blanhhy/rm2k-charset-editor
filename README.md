@@ -8,11 +8,12 @@
 
 # Build
 
-本项目使用 pnpm 管理，Vite 构建，因此：
+本项目使用 pnpm 管理，因此：
 
 ```bash
 pnpm install
 pnpm run build
+pnpm run dev
 ```
 
 也有一个在线示例：
